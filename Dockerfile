@@ -1,19 +1,23 @@
-# Playwright needs Chromium + system libs. The official Playwright Python image
-# ships them preinstalled and matches our playwright>=1.60 pin.
-FROM mcr.microsoft.com/playwright/python:v1.60.0-noble
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install Python deps first so the layer caches across code changes.
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
-    && python -m playwright install chromium
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
 
+# Install Python deps
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy app files
 COPY . .
 
-# Serve on all interfaces inside the container; map the port in compose.
-ENV HOST=0.0.0.0 \
-    PORT=8000
+# Set environment variables
+ENV HOST=0.0.0.0
+ENV PORT=8000
 
 EXPOSE 8000
 
